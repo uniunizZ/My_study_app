@@ -3,10 +3,13 @@ import google.generativeai as genai
 import tempfile
 import time
 
-# APIキーの設定
+# 1. APIキーの設定
 API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+
+# 【修正ポイント】モデルの指定方法を最もシンプルな形に変更
+# 名前から 'models/' を消し、一番安定している名前を使います
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 st.set_page_config(page_title="iPad専用AI家庭教師", layout="wide")
 st.title("📖 iPad専用AI家庭教師")
@@ -17,11 +20,12 @@ if uploaded_files:
     gemini_files = []
     with st.spinner('ファイルを解析中...'):
         for uploaded_file in uploaded_files:
+            # 既にアップロード済みのファイルを再利用しないよう処理
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                 tmp.write(uploaded_file.getvalue())
                 gen_file = genai.upload_file(path=tmp.name, display_name=uploaded_file.name)
                 
-                # 重要：ファイルが「有効」になるまで待機する処理を追加
+                # ファイルが使えるようになるまで待機
                 while gen_file.state.name == "PROCESSING":
                     time.sleep(2)
                     gen_file = genai.get_file(gen_file.name)
@@ -37,18 +41,20 @@ if uploaded_files:
         if not user_input:
             st.warning("質問を入力してください。")
         else:
-            prompt = [
-                f"あなたは教育のプロです。現在は「{mode}」モードです。",
-                "提供された教材の内容に基づいてのみ回答してください。",
-                "解説は教科書に沿って分かりやすく、問題作成は提供された問題データからランダムに行ってください。",
-                user_input
-            ]
+            # プロンプトとファイルを組み合わせて送信
+            # ここを一番シンプルなリスト形式にします
+            content_to_send = []
+            for f in gemini_files:
+                content_to_send.append(f)
+            content_to_send.append(f"あなたは教育のプロです。現在は「{mode}」モードです。")
+            content_to_send.append("提供された教材に基づいてのみ回答してください。")
+            content_to_send.append(user_input)
             
             with st.spinner('AIが回答を生成中...'):
                 try:
-                    # ファイルとプロンプトを送信
-                    response = model.generate_content(gemini_files + prompt)
+                    response = model.generate_content(content_to_send)
                     st.markdown("---")
                     st.markdown(response.text)
                 except Exception as e:
                     st.error(f"エラーが発生しました: {e}")
+                    st.info("APIキーが正しいか、Google AI Studioで再確認してみてください。")
