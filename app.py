@@ -6,8 +6,7 @@ import time
 # APIキーの設定
 API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=API_KEY)
-# 名前を直接指定せず、確実に存在するモデルを指定する書き方です
-model = genai.GenerativeModel(model_name='gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 st.set_page_config(page_title="iPad専用AI家庭教師", layout="wide")
 st.title("📖 iPad専用AI家庭教師")
