@@ -62,16 +62,23 @@ if uploaded_files:
         else:
             with st.spinner('AIが回答を生成中...'):
                 try:
-                    # シンプルなメッセージ形式で送信
+                    # AIに送る内容を整理します
                     messages = []
+                    # 1. 読み込んだすべてのファイルを追加
                     for f in gemini_files:
                         messages.append(f)
-                    messages.append(f"あなたは看護教育のプロです。現在は「{mode}」モードです。教材に基づいて日本語で詳しく答えてください。")
-                    messages.append(user_input)
                     
+                    # 2. 指示と質問を1つの文章にまとめて追加
+                    instruction = (
+                        f"あなたは看護教育のプロです。現在は「{mode}」モードです。\n"
+                        f"提供された教材の内容に基づいて、日本語で詳しく分かりやすく回答してください。\n\n"
+                        f"質問: {user_input}"
+                    )
+                    messages.append(instruction)
+                    
+                    # 送信
                     response = model.generate_content(messages)
                     st.markdown("---")
                     st.write(response.text)
                 except Exception as e:
                     st.error(f"エラーが発生しました: {e}")
-                    st.info("一度『Manage app』から『Reboot app』を試してみてください。")
